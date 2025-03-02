@@ -2,3 +2,4 @@ streamlit==1.15.0
 speechrecognition==3.8.1
 gtts==2.2.3
 googletrans==4.0.0-rc1
+altair==4.2.2
