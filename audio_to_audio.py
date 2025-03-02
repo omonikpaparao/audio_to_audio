@@ -43,6 +43,14 @@ st.title("Translate the Audio File to another language Audio File")
 # File uploader to upload the .wav audio file
 uploaded_file = st.file_uploader("Upload a .wav file", type=["wav"])
 
+# Initialize session state variables to persist values across interactions
+if 'transcribed_text' not in st.session_state:
+    st.session_state.transcribed_text = None
+
+if 'target_language' not in st.session_state:
+    st.session_state.target_language = None
+
+# Check if file is uploaded
 if uploaded_file is not None:
     # Displaying the uploaded audio file
     st.audio(uploaded_file, format='audio/wav')
@@ -51,31 +59,34 @@ if uploaded_file is not None:
     language_option = st.selectbox("Select the language of the audio", 
                                   ["en", "te", "hi", "ta", "kn", "ml", "kn", "mr", "or", "kok", "bn", "sa", "ur", "gu", "pa", "as", "ks"])
 
-    # Button to trigger transcription
+    # Step 1: Transcribe the audio to text when button is clicked
     if st.button("Transcribe Audio"):
-        # Step 1: Transcribe the audio to text in the provided language (ASR)
+        # Transcribe the audio to text in the selected language (ASR)
         transcribed_text = transcribe_audio(uploaded_file, language_option)
         
         if transcribed_text:
+            st.session_state.transcribed_text = transcribed_text
             st.subheader("Text for the given Audio File:")
             st.write(transcribed_text)
-            input_text = transcribed_text
 
-            # Step 2: Translate the transcribed text
-            languages = ["en", "te", "hi", "ta", "kn", "ml", "kn", "mr", "or", "kok", "bn", "sa", "ur", "gu", "pa", "as", "ks"]
-            target_language = st.selectbox("Select target language to translate the audio text", languages)
+    # If transcription exists, allow translation
+    if st.session_state.transcribed_text:
+        # Step 2: Translate the transcribed text
+        languages = ["en", "te", "hi", "ta", "kn", "ml", "kn", "mr", "or", "kok", "bn", "sa", "ur", "gu", "pa", "as", "ks"]
+        target_language = st.selectbox("Select target language to translate the audio text", languages, index=languages.index(st.session_state.target_language) if st.session_state.target_language else 0)
 
-            # Step 3: Translate the transcribed text when button is clicked (NMT)
-            if st.button("Translate and Convert to Speech"):
-                if input_text:
-                    translated_text = translate_text(input_text, target_language)
-                    #st.subheader("Translated Text:")
-                    #st.write(translated_text)
+        # Save the selected target language to session state
+        st.session_state.target_language = target_language
 
-                    # Convert the translated text to speech (TTS)
-                    audio_file = text_to_speech(translated_text, target_language)
-                    
-                    # Play the audio file
-                    st.audio(audio_file, format='audio/mp3')
-                else:
-                    st.warning("Something went wrong with the translation process.")
+        # Step 3: Translate the transcribed text when button is clicked (NMT)
+        if st.button("Translate and Convert to Speech"):
+            if st.session_state.transcribed_text:
+                translated_text = translate_text(st.session_state.transcribed_text, target_language)
+
+                # Convert the translated text to speech (TTS)
+                audio_file = text_to_speech(translated_text, target_language)
+                
+                # Play the audio file
+                st.audio(audio_file, format='audio/mp3')
+            else:
+                st.warning("Something went wrong with the translation process.")
